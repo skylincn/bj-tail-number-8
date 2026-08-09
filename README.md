@@ -192,3 +192,19 @@ GitHub Actions workflow 位于 `.github/workflows/generate.yml`：
 
 > 提示：iOS 版本不同，「获取日程 / 查找日历事件」的叫法略有差异；找不到时用「日历」相关动作即可。第一次建好后跑一次验证（把手机日期临时看不到，建议先手动触发一次看是否生成提醒）。
 
+## 为什么「远程一键建好个人自动化」做不到（含 C 方案实情）
+
+Apple 的「个人自动化」（每天定时触发那种）**没有任何命令行/远程接口可创建**，任何人（人、Codex、还是其他 agent）都必须进快捷指令 App 在 UI 里点出来。`shortcuts` 命令只有 `run/list/view/sign`，没有 `import/create`；本仓库实测：**本机 `shortcuts sign` 无法把手工拼的 plist 签成能在 iPhone 打开的 `.shortcut` 文件**（Apple 私有签名格式，复刻不了）。
+
+所以「完全不用你动一步」在 iOS 个人自动化上不成立——这不是权限或谁更强，是 Apple 的平台边界。能交付的两条路：
+
+- **Mac 端全自动（已就绪）**：见 `每日提醒配置.md`。脚本 + `launchd` 写好并实测过，你本机终端跑一行 `launchctl load ~/Library/LaunchAgents/com.bjtailnumber.check.plist` 即生效。
+- **iPhone 端（仍需你点 2 下）**：上面的第 5 章步骤。为减少你写逻辑，本仓库已备好 `scripts/limit_check_for_shortcuts.sh`（与 Mac 同判定逻辑），如果你在 iPhone 快捷指令里用「运行脚本」动作，可直接调用它，输出 `YES`/`NO` 供「如果」判断——省去拼日历查询那几步。
+
+### 最短手机路径（2 下）
+1. 快捷指令 → 自动化 → + → 创建个人自动化 → 特定时间：每天 06:00。
+2. 添加动作 → 运行脚本（`scripts/limit_check_for_shortcuts.sh`）→ 如果输出 `YES` → 新建提醒事项（标题「🚫 今天尾号8限行，1068 别开进城」）。
+3. 关掉「运行前询问」。
+
+> 说明：`limit_check_for_shortcuts.sh` 需 iPhone 端有可运行 shell 的环境（如已配置 SSH/iSH 或 Mac 端接力）。若纯 iPhone 无 shell，则走第 5 章的「获取日程」方案即可，逻辑一致。
+
